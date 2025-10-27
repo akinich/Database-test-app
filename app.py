@@ -11,16 +11,25 @@ from contextlib import contextmanager
 def init_connection_pool():
     """Initialize connection pool to PostgreSQL database"""
     try:
-        return psycopg2.pool.SimpleConnectionPool(
-            1, 10,  # min and max connections
-            host=st.secrets["database"]["host"],
-            database=st.secrets["database"]["database"],
-            user=st.secrets["database"]["user"],
-            password=st.secrets["database"]["password"],
-            port=st.secrets["database"]["port"]
-        )
+        # Try using connection string first if available
+        if "connection_string" in st.secrets["database"]:
+            return psycopg2.pool.SimpleConnectionPool(
+                1, 10,
+                st.secrets["database"]["connection_string"]
+            )
+        else:
+            # Fall back to individual parameters
+            return psycopg2.pool.SimpleConnectionPool(
+                1, 10,  # min and max connections
+                host=st.secrets["database"]["host"],
+                database=st.secrets["database"]["database"],
+                user=st.secrets["database"]["user"],
+                password=st.secrets["database"]["password"],
+                port=st.secrets["database"]["port"]
+            )
     except Exception as e:
         st.error(f"Error connecting to database: {e}")
+        st.info("Check your database connection settings in Streamlit secrets")
         return None
 
 @contextmanager
